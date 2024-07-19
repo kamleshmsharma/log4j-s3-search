@@ -29,6 +29,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -180,20 +182,20 @@ public class Log4j2AppenderBuilder
         Optional<S3Configuration> s3Config = Optional.empty();
         if (StringUtils.isTruthy(s3Bucket)) {
             S3Configuration config = new S3Configuration();
-            config.setBucket(s3Bucket);
-            config.setPath(s3Path);
-            config.setRegion(s3Region);
-            config.setAccessKey(s3AwsKey);
-            config.setSecretKey(s3AwsSecret);
-            config.setSessionToken(s3AwsSessionToken);
-            config.setServiceEndpoint(s3ServiceEndpoint);
-            config.setSigningRegion(s3SigningRegion);
+            config.setBucket(Utils.parseInputValue(s3Bucket));
+            config.setPath(Utils.parseInputValue(s3Path));
+            config.setRegion(Utils.parseInputValue(s3Region));
+            config.setAccessKey(Utils.parseInputValue(s3AwsKey));
+            config.setSecretKey(Utils.parseInputValue(s3AwsSecret));
+            config.setSessionToken(Utils.parseInputValue(s3AwsSessionToken));
+            config.setServiceEndpoint(Utils.parseInputValue(s3ServiceEndpoint));
+            config.setSigningRegion(Utils.parseInputValue(s3SigningRegion));
             config.setPathStyleAccess(s3PathStyleAccess);
-            config.setCompressionEnabled(Boolean.parseBoolean(s3Compression));
-            config.setKeyGzSuffixEnabled(Boolean.parseBoolean(s3KeyGzSuffixEnabled));
+            config.setCompressionEnabled(Boolean.parseBoolean(Utils.parseInputValue(s3Compression)));
+            config.setKeyGzSuffixEnabled(Boolean.parseBoolean(Utils.parseInputValue(s3KeyGzSuffixEnabled)));
             if (StringUtils.isTruthy(s3CannedAcl)) {
                 try {
-                    config.setCannedAclFromValue(s3CannedAcl);
+                    config.setCannedAclFromValue(Utils.parseInputValue(s3CannedAcl));
                 } catch (IllegalArgumentException ex) {
                     VansLogger.logger.warn(String.format("Ignoring unrecognized canned ACL value %s", s3CannedAcl));
                 }
@@ -202,12 +204,14 @@ public class Log4j2AppenderBuilder
             S3Configuration.S3SSEConfiguration sseConfig = null;
             if (s3SseKeyType != null) {
                 sseConfig = new S3Configuration.S3SSEConfiguration(
-                        S3Configuration.SSEType.valueOf(s3SseKeyType),
+                        S3Configuration.SSEType.valueOf(Utils.parseInputValue(s3SseKeyType)),
                         null
                 );
             }
             config.setSseConfiguration(sseConfig);
-            config.setStorageClass(s3StorageClass);
+            config.setStorageClass(Utils.parseInputValue(s3StorageClass));
+
+            System.out.format("S3 Log4j2Appender Configurations # : Bucket :%s \n Path:%s \n key:%s \n secret:%s \n s3PathStyleAccess:%s \n s3Compression:%s \n", config.getBucket(), config.getPath(), Utils.maskSensitiveData(config.getAccessKey()), Utils.maskSensitiveData(config.getSecretKey()) , config.isPathStyleAccess(), config.isCompressionEnabled());
 
             s3Config = Optional.of(config);
         }
@@ -276,7 +280,7 @@ public class Log4j2AppenderBuilder
 
     IBufferPublisher createCachePublisher() throws UnknownHostException {
         // Use the configured host name if any.
-        String hostNameForPublisher = this.hostName;
+        String hostNameForPublisher = Utils.parseInputValue(this.hostName);
         if (!StringUtils.isTruthy(hostNameForPublisher)) {
             java.net.InetAddress addr = java.net.InetAddress.getLocalHost();
             hostNameForPublisher = addr.getHostName();
@@ -351,4 +355,5 @@ public class Log4j2AppenderBuilder
         }
         return monitor;
     }
+
 }
