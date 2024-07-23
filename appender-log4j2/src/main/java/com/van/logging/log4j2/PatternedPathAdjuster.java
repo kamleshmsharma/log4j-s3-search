@@ -33,7 +33,7 @@ public class PatternedPathAdjuster implements IStorageDestinationAdjuster {
         Matcher matcher = p.matcher(path);
         while (matcher.find()) {
             String envVarName = matcher.group(1);
-            String value = Utils.parseInputValue(envVarName);
+            String value = getValue(envVarName);
             matcher.appendReplacement(sb, value);
         }
         matcher.appendTail(sb);
@@ -52,6 +52,16 @@ public class PatternedPathAdjuster implements IStorageDestinationAdjuster {
             adjusted = sb.toString();
         }
         return adjusted;
+    }
+
+    private String getValue(String varName) {
+        if (StringUtils.isTruthy(System.getenv(varName))) {
+            return System.getenv(varName);
+        } else if (StringUtils.isTruthy(System.getProperty(varName))) {
+            return System.getProperty(varName);
+        } else {
+            throw new RuntimeException(String.format("No env-var or system property named '%s' found.", envVarName));
+        }
     }
 
     /*public static void main(String[] args) {
